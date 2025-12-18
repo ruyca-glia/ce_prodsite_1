@@ -2,14 +2,20 @@
 <html>
   <head>
     <script async src="https://api.glia.com/salemove_integration.js"></script>
-  <title>CE Testing Site</title>
-  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+    <title>CE Testing Site</title>
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <style>
-    h1  {color:#7C19DD;}
-    h1  {font-family:roboto;}
-    img {
-      width:50%;
-    }
+      h1 { color:#7C19DD; font-family:roboto; text-align:center; }
+      img { width:50%; display: block; margin: 0 auto; }
+      .nav-container { text-align: center; margin-top: 20px; }
+      .btn {
+        padding: 10px 20px;
+        background-color: #7C19DD;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-family: roboto, sans-serif;
+      }
     </style>
   </head>
 
@@ -18,6 +24,10 @@
       <img src="images/Full LOGO_black.png" alt="CE logo" style="width:750px">
     </center>
 
-    <h1 id="title" class="title" style="text-align:center;">Welcome to our PROD site!</h1>
+    <h1 id="title" class="title">Welcome to our PROD site!</h1>
+
+    <div class="nav-container">
+      <a href="other_page.html" class="btn">Go to Cat Facts</a>
+    </div>
   </body>
 </html>
