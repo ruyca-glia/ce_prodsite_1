@@ -3,6 +3,39 @@
   <head>
     <script async src="https://api.glia.com/salemove_integration.js"></script>
 
+    <script>
+      // We wrap this in a function to ensure 'sm' is defined
+      window.smReady = function() {
+        sm.getApi({ version: 'v1' }).then(function(salemove) {
+          // Setting isCustomTheme to true is required for overrides to take effect
+          salemove.config.isCustomTheme = true;
+
+          // Update the Reactive Tab (the button on the side)
+          salemove.config.reactiveTabVisuals = {
+            backColor: "#0000FF",
+            frontColor: "#FF0000",
+            fontSize: 14,
+            format: "text",
+            iconType: "text",
+            placement: "right",
+            size: 80,
+            text: "Click Me!",
+            verticalOffset: 100,
+            visibleOperatorCount: 1
+          };
+          
+          console.log("Glia SDK configuration applied.");
+        });
+      };
+
+      // Check if sm is already there, otherwise wait for the script to load
+      if (window.sm) {
+        smReady();
+      } else {
+        window.addEventListener('sm.initialized', smReady);
+      }
+    </script>
+
     <title>CE Testing Site</title>
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <style>
