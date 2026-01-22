@@ -2,8 +2,40 @@
 <html>
   <head>
     <script async src="https://api.glia.com/salemove_integration.js"></script>
+<<<<<<< HEAD
     <title>CE Testing Site</title>
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+=======
+    <script>
+      // 1. The Shim (Standard Glia setup)
+      window.sm = window.sm || function() { (sm.q = sm.q || []).push(arguments) };
+
+      // 2. Wait for the SDK to be ready
+      sm(function() {
+        sm.getApi({ version: 'v1' }).then(function(salemove) {
+            
+            // Apply the visuals to the config object
+            salemove.config.reactiveTabVisuals = {
+                frontColor: "#00FF00", // Green text
+                backColor: "#FF0000",  // Red background
+                text: "Chat with uuuus",  // Ensure text is defined
+                format: "text"
+            };
+
+            // CRITICAL: This flag must be true for the above to work
+            salemove.config.isCustomTheme = true; 
+            
+            console.log('Glia custom theme applied!');
+        }).catch(function(error) {
+            console.error('Glia SDK Error:', error);
+        });
+      });
+    </script>
+
+
+  <title>CE Testing Site</title>
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+>>>>>>> 8da5400 (changes to prod)
     <style>
       h1 { color:#7C19DD; font-family:roboto; text-align:center; }
       img { width:50%; display: block; margin: 0 auto; }
