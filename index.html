@@ -51,6 +51,8 @@
         font-family: roboto, sans-serif;
       }
     </style>
+    <link rel="stylesheet" href="./static/css/styles.css">
+    <script type="text/javascript" src="./static/js/client-app.js" defer></script>
   </head>
 
   <body>
@@ -61,7 +63,22 @@
     <h1 id="title" class="title">Welcome to our PROD site!</h1>
 
     <div class="nav-container">
-      <a href="other_page.html" class="btn">Go to Cat Facts</a>
+      <a href="/static/other_page.html" class="btn">Go to Cat Facts</a>
     </div>
+
+    <div class="nav-container">
+      <a href="./static/desafilacion.html" id="redirect-link" class="btn">Go to desafilacion</a>
+    </div>
+
+    <dialog id="tos-modal">
+      <h2>Terms of service</h2>
+      <p>By continuing, you agree to our terms and conditions.</p>
+      <div class="actions">
+        <button id="cancel-btn">Cancel</button>
+        <button id="accept-btn">I accept</button>
+      </div>
+    </dialog>
+
   </body>
 </html>
++
