@@ -4,10 +4,15 @@
     <script async src="https://api.glia.com/salemove_integration.js"></script>
 
     <script>
-      window.smReady = function() {
-        sm.getApi({ version: 'v1' }).then(function(salemove) {
-          salemove.config.isCustomTheme = true;
+      console.log("[Glia Debug] 1. Script parsed, checking for Glia SDK...");
 
+      window.smReady = function() {
+        console.log("[Glia Debug] 2. smReady() triggered. Requesting Glia API...");
+        
+        sm.getApi({ version: 'v1' }).then(function(salemove) {
+          console.log("[Glia Debug] 3. sm.getApi() resolved. Glia API is available.");
+
+          salemove.config.isCustomTheme = true;
           salemove.config.reactiveTabVisuals = {
             backColor: "#0000FF",
             frontColor: "#FF0000",
@@ -20,28 +25,51 @@
             verticalOffset: 100,
             visibleOperatorCount: 1
           };
-          console.log("Glia SDK configuration applied.");
+          console.log("[Glia Debug] 4. SDK config (Custom Theme & Tab Visuals) applied.");
 
-          // --- NEW CODE: Attach event listener to our custom button ---
-          const videoBtn = document.getElementById('start-video-btn');
-          if (videoBtn) {
-            videoBtn.addEventListener('click', function() {
-              // The SDK handles the API calls and authorization automatically
-              salemove.requestEngagement('video')
-                .then(function() {
-                  console.log('Video engagement request sent successfully!');
-                })
-                .catch(function(error) {
-                  console.error('Failed to request video engagement:', error);
-                });
-            });
+          // Helper function to safely attach our button listener
+          function setupVideoButton() {
+            console.log("[Glia Debug] 5. Searching for #start-video-btn in the DOM...");
+            const videoBtn = document.getElementById('start-video-btn');
+            
+            if (videoBtn) {
+              console.log("[Glia Debug] 6. SUCCESS! Button found. Attaching click listener.");
+              videoBtn.addEventListener('click', function() {
+                console.log("[Glia Debug] 7. BUTTON CLICKED! Requesting video engagement...");
+                
+                salemove.requestEngagement('video')
+                  .then(function() {
+                    console.log('[Glia Debug] 8. SUCCESS: Video engagement requested successfully!');
+                  })
+                  .catch(function(error) {
+                    console.error('[Glia Debug] 8. ERROR: Failed to request video engagement:', error);
+                  });
+              });
+            } else {
+              console.warn("[Glia Debug] FAILURE: Could not find #start-video-btn. Check your HTML.");
+            }
           }
+
+          // Crucial Fix: Ensure the DOM is fully loaded before looking for the button
+          if (document.readyState === 'loading') {
+            console.log("[Glia Debug] DOM still loading. Waiting for DOMContentLoaded...");
+            document.addEventListener('DOMContentLoaded', setupVideoButton);
+          } else {
+            console.log("[Glia Debug] DOM is already loaded. Setting up button immediately...");
+            setupVideoButton();
+          }
+
+        }).catch(function(err) {
+          console.error("[Glia Debug] ERROR: Failed to get Glia API:", err);
         });
       };
 
+      // Bootstrapping the SDK readiness check
       if (window.sm) {
+        console.log("[Glia Debug] window.sm already exists. Calling smReady()...");
         smReady();
       } else {
+        console.log("[Glia Debug] window.sm does NOT exist yet. Listening for 'sm.initialized'...");
         window.addEventListener('sm.initialized', smReady);
       }
     </script>
