@@ -12,29 +12,51 @@
         sm.getApi({ version: 'v1' }).then(function(salemove) {
           console.log("[Glia Debug] 3. sm.getApi() resolved. Glia API is available.");
 
-          // TEMPORARY FIX: Set this to false so Glia renders its default Video UI!
-          salemove.config.isCustomTheme = false; 
+          // MUST BE TRUE to allow us to embed the video in our own custom tags
+          salemove.config.isCustomTheme = true; 
           
-          salemove.config.reactiveTabVisuals = {
-            backColor: "#0000FF",
-            frontColor: "#FF0000",
-            fontSize: 14,
-            format: "text",
-            iconType: "text",
-            placement: "right",
-            size: 80,
-            text: "Click Me!",
-            verticalOffset: 100,
-            visibleOperatorCount: 1
-          };
-          console.log("[Glia Debug] 4. SDK config applied. Custom Theme is OFF for testing.");
+          // --- NEW: Listen for the Engagement to Start ---
+          salemove.addEventListener(salemove.EVENTS.ENGAGEMENT_START, function(engagement) {
+            console.log("[Glia Debug] Engagement Started! Listening for media streams...");
+            
+            // Unhide our custom video container on the page
+            document.getElementById('embedded-video-container').style.display = 'block';
 
-          // Keeping our manual button just in case
+            // Listen for media stream updates (when cameras turn on/off)
+            engagement.addEventListener(engagement.EVENTS.MEDIA_STATE_UPDATE, function(mediaState) {
+              console.log("[Glia Debug] Media State Updated:", mediaState);
+              
+              const operatorVideo = document.getElementById('operator-video');
+              const visitorVideo = document.getElementById('visitor-video');
+
+              // --- 1. Handle Operator (Remote) Video ---
+              if (mediaState.remoteVideo) {
+                 // Safely attach the WebRTC stream to our <video> tag
+                 operatorVideo.srcObject = mediaState.remoteVideo.stream || mediaState.remoteVideo;
+                 operatorVideo.play().catch(e => console.error("Video play failed", e));
+              } else {
+                 // Operator turned off camera or hasn't connected it yet
+                 operatorVideo.srcObject = null;
+              }
+
+              // --- 2. Handle Visitor (Local) Video ---
+              if (mediaState.localVideo) {
+                 visitorVideo.srcObject = mediaState.localVideo.stream || mediaState.localVideo;
+                 visitorVideo.play().catch(e => console.error("Video play failed", e));
+              } else {
+                 visitorVideo.srcObject = null;
+              }
+            });
+          });
+
+          // Helper function to safely attach our button listener
           function setupVideoButton() {
             const videoBtn = document.getElementById('start-video-btn');
             if (videoBtn) {
               videoBtn.addEventListener('click', function() {
                 console.log("[Glia Debug] Manual video button clicked...");
+                
+                // Request the video engagement
                 salemove.requestEngagement('video')
                   .catch(function(error) {
                     console.error('[Glia Debug] ERROR:', error);
@@ -84,8 +106,30 @@
         display: inline-block;
         margin: 5px;
       }
-      .btn-orange { background-color: #FF5722; }
       .btn:hover { opacity: 0.9; }
+
+      /* --- NEW: Styling for our embedded video player --- */
+      #embedded-video-container {
+        display: none; /* Hidden until the call actually starts */
+        max-width: 800px;
+        margin: 30px auto;
+        padding: 20px;
+        border: 3px solid #7C19DD;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+        text-align: center;
+      }
+      .video-wrapper {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 15px;
+      }
+      video {
+        width: 45%;
+        border-radius: 8px;
+        background-color: #000; /* Black background while loading */
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+      }
     </style>
     <link rel="stylesheet" href="./static/css/styles.css">
     <script type="text/javascript" src="./static/js/client-app.js" defer></script>
@@ -100,16 +144,20 @@
 
     <div class="nav-container">
       <button id="start-video-btn" class="btn">Force Video API Call</button>
-      
-      <div data-sm-show-media-selection-on="click" class="btn btn-orange">
-        Open Glia Media Selector
+    </div>
+
+    <div id="embedded-video-container">
+      <h2 style="color: #7C19DD; margin-top: 0;">Live Video Call</h2>
+      <div class="video-wrapper">
+        <video id="operator-video" autoplay playsinline></video>
+        <video id="visitor-video" autoplay playsinline muted></video>
       </div>
     </div>
 
     <div class="nav-container">
       <a href="/static/other_page.html" class="btn">Go to Cat Facts</a>
     </div>
-
+    
     <div class="nav-container">
       <a href="./static/desafilacion.html" id="redirect-link" class="btn">Go to desafilacion</a>
     </div>
