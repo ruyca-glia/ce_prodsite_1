@@ -4,13 +4,10 @@
     <script async src="https://api.glia.com/salemove_integration.js"></script>
 
     <script>
-      // We wrap this in a function to ensure 'sm' is defined
       window.smReady = function() {
         sm.getApi({ version: 'v1' }).then(function(salemove) {
-          // Setting isCustomTheme to true is required for overrides to take effect
           salemove.config.isCustomTheme = true;
 
-          // Update the Reactive Tab (the button on the side)
           salemove.config.reactiveTabVisuals = {
             backColor: "#0000FF",
             frontColor: "#FF0000",
@@ -23,12 +20,25 @@
             verticalOffset: 100,
             visibleOperatorCount: 1
           };
-          
           console.log("Glia SDK configuration applied.");
+
+          // --- NEW CODE: Attach event listener to our custom button ---
+          const videoBtn = document.getElementById('start-video-btn');
+          if (videoBtn) {
+            videoBtn.addEventListener('click', function() {
+              // The SDK handles the API calls and authorization automatically
+              salemove.requestEngagement('video')
+                .then(function() {
+                  console.log('Video engagement request sent successfully!');
+                })
+                .catch(function(error) {
+                  console.error('Failed to request video engagement:', error);
+                });
+            });
+          }
         });
       };
 
-      // Check if sm is already there, otherwise wait for the script to load
       if (window.sm) {
         smReady();
       } else {
@@ -49,7 +59,11 @@
         text-decoration: none;
         border-radius: 5px;
         font-family: roboto, sans-serif;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
       }
+      .btn:hover { background-color: #5a12a3; }
     </style>
     <link rel="stylesheet" href="./static/css/styles.css">
     <script type="text/javascript" src="./static/js/client-app.js" defer></script>
@@ -61,6 +75,10 @@
     </center>
 
     <h1 id="title" class="title">Welcome to our PROD site!</h1>
+
+    <div class="nav-container">
+      <button id="start-video-btn" class="btn">Start Video Engagement</button>
+    </div>
 
     <div class="nav-container">
       <a href="/static/other_page.html" class="btn">Go to Cat Facts</a>
@@ -78,7 +96,5 @@
         <button id="accept-btn">I accept</button>
       </div>
     </dialog>
-
   </body>
 </html>
-+
