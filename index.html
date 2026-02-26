@@ -4,61 +4,73 @@
     <script async src="https://api.glia.com/salemove_integration.js"></script>
 
     <script>
+      console.log("[Glia Debug] 1. Script parsed, setting up Glia waiter...");
+
       window.smReady = function() {
         console.log("[Glia Debug] 2. smReady() triggered. Requesting Glia API...");
         
         sm.getApi({ version: 'v1' }).then(function(salemove) {
           console.log("[Glia Debug] 3. sm.getApi() resolved. Glia API is available.");
 
+          // MUST BE TRUE so Glia doesn't spawn its default UI and lets us embed it
           salemove.config.isCustomTheme = true; 
           
           // --- THE SWISS ARMY KNIFE MEDIA ATTACHER ---
-          function attachWebRTCStream(mediaObj, videoElement) {
+          function attachWebRTCStream(mediaObj, videoElementId) {
+            const videoElement = document.getElementById(videoElementId);
+            
+            if (!videoElement) {
+              console.warn(`[Glia Debug] Cannot find element with ID: ${videoElementId}`);
+              return;
+            }
+
             if (!mediaObj) {
+              // If mediaObj is null/undefined, camera was turned off or hasn't connected
               videoElement.srcObject = null;
               return;
             }
 
-            console.log(`[Glia Debug] Attempting to attach media to ${videoElement.id}:`, mediaObj);
+            console.log(`[Glia Debug] Attaching media to ${videoElementId}:`, mediaObj);
 
             // 1. Is it a standard WebRTC MediaStream?
             if (mediaObj instanceof MediaStream) {
               console.log("[Glia Debug] -> It's a MediaStream. Assigning to srcObject.");
               videoElement.srcObject = mediaObj;
+              videoElement.play().catch(e => console.error("Play failed:", e));
             }
             // 2. Is it wrapped inside a 'stream' property?
             else if (mediaObj.stream && mediaObj.stream instanceof MediaStream) {
               console.log("[Glia Debug] -> It's a wrapped MediaStream. Assigning to srcObject.");
               videoElement.srcObject = mediaObj.stream;
+              videoElement.play().catch(e => console.error("Play failed:", e));
             }
             // 3. Is it a Twilio-style Track object with an attach() method?
             else if (typeof mediaObj.attach === 'function') {
-              console.log("[Glia Debug] -> It's a Track object with an attach() method. Executing...");
-              // Twilio attaches the stream and returns a new <video> element
+              console.log("[Glia Debug] -> It's a Track object. Executing attach()...");
               const newVideoElement = mediaObj.attach();
-              // Make sure the new element has our classes/styles if needed
+              newVideoElement.id = videoElementId; // Preserve our ID
               newVideoElement.style.width = '45%';
               newVideoElement.style.borderRadius = '8px';
+              if (videoElementId === 'visitor-video') newVideoElement.muted = true;
               videoElement.replaceWith(newVideoElement); 
             }
             // 4. Did Glia already build the HTML <video> element for us?
             else if (mediaObj instanceof HTMLElement) {
-              console.log("[Glia Debug] -> It's a pre-built HTML Element. Swapping it into the DOM.");
+              console.log("[Glia Debug] -> It's a pre-built HTML Element. Swapping it in.");
+              mediaObj.id = videoElementId; // Preserve our ID
               mediaObj.style.width = '45%';
               mediaObj.style.borderRadius = '8px';
+              if (videoElementId === 'visitor-video') mediaObj.muted = true;
               videoElement.replaceWith(mediaObj);
+              mediaObj.play().catch(e => console.error("Play failed:", e));
             }
             // 5. Unrecognized Format
             else {
-              console.warn("[Glia Debug] -> UNRECOGNIZED media format! The screen will stay black.", mediaObj);
-            }
-            
-            // Give the browser a gentle nudge to play
-            if (videoElement.play) {
-                videoElement.play().catch(e => console.error("Autoplay prevented:", e));
+              console.warn("[Glia Debug] -> UNRECOGNIZED media format! Check the object:", mediaObj);
             }
           }
 
+          // --- Listen for the Engagement to Start ---
           salemove.addEventListener(salemove.EVENTS.ENGAGEMENT_START, function(engagement) {
             console.log("[Glia Debug] Engagement Started! Unhiding video container...");
             document.getElementById('embedded-video-container').style.display = 'block';
@@ -66,20 +78,19 @@
             engagement.addEventListener(engagement.EVENTS.MEDIA_STATE_UPDATE, function(mediaState) {
               console.log("[Glia Debug] RAW Media State Updated:", mediaState);
               
-              const operatorVideo = document.getElementById('operator-video');
-              const visitorVideo = document.getElementById('visitor-video');
-
-              // Use our robust attacher function
-              attachWebRTCStream(mediaState.remoteVideo, operatorVideo);
-              attachWebRTCStream(mediaState.localVideo, visitorVideo);
+              // Pass the object and the target ID to our robust attacher
+              attachWebRTCStream(mediaState.remoteVideo, 'operator-video');
+              attachWebRTCStream(mediaState.localVideo, 'visitor-video');
             });
           });
 
+          // Helper function to safely attach our manual button listener
           function setupVideoButton() {
             const videoBtn = document.getElementById('start-video-btn');
             if (videoBtn) {
               videoBtn.addEventListener('click', function() {
-                salemove.requestEngagement('video').catch(e => console.error(e));
+                console.log("[Glia Debug] Manual video button clicked...");
+                salemove.requestEngagement('video').catch(e => console.error('[Glia Debug] ERROR:', e));
               });
             }
           }
@@ -94,6 +105,17 @@
           console.error("[Glia Debug] ERROR: Failed to get Glia API:", err);
         });
       };
+
+      // The bulletproof poller
+      function checkGliaReady() {
+        if (window.sm && typeof window.sm.getApi === 'function') {
+           window.smReady();
+        } else {
+           setTimeout(checkGliaReady, 100);
+        }
+      }
+
+      checkGliaReady();
     </script>
 
     <title>CE Testing Site</title>
@@ -117,7 +139,7 @@
       }
       .btn:hover { opacity: 0.9; }
 
-      /* --- NEW: Styling for our embedded video player --- */
+      /* Styling for our embedded video player */
       #embedded-video-container {
         display: none; /* Hidden until the call actually starts */
         max-width: 800px;
@@ -138,6 +160,7 @@
         border-radius: 8px;
         background-color: #000; /* Black background while loading */
         box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+        object-fit: cover; /* Prevents video from stretching weirdly */
       }
     </style>
     <link rel="stylesheet" href="./static/css/styles.css">
