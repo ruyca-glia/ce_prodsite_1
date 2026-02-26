@@ -4,63 +4,82 @@
     <script async src="https://api.glia.com/salemove_integration.js"></script>
 
     <script>
-      console.log("[Glia Debug] 1. Script parsed, setting up Glia waiter...");
-
       window.smReady = function() {
         console.log("[Glia Debug] 2. smReady() triggered. Requesting Glia API...");
         
         sm.getApi({ version: 'v1' }).then(function(salemove) {
           console.log("[Glia Debug] 3. sm.getApi() resolved. Glia API is available.");
 
-          // MUST BE TRUE to allow us to embed the video in our own custom tags
           salemove.config.isCustomTheme = true; 
           
-          // --- NEW: Listen for the Engagement to Start ---
-          salemove.addEventListener(salemove.EVENTS.ENGAGEMENT_START, function(engagement) {
-            console.log("[Glia Debug] Engagement Started! Listening for media streams...");
+          // --- THE SWISS ARMY KNIFE MEDIA ATTACHER ---
+          function attachWebRTCStream(mediaObj, videoElement) {
+            if (!mediaObj) {
+              videoElement.srcObject = null;
+              return;
+            }
+
+            console.log(`[Glia Debug] Attempting to attach media to ${videoElement.id}:`, mediaObj);
+
+            // 1. Is it a standard WebRTC MediaStream?
+            if (mediaObj instanceof MediaStream) {
+              console.log("[Glia Debug] -> It's a MediaStream. Assigning to srcObject.");
+              videoElement.srcObject = mediaObj;
+            }
+            // 2. Is it wrapped inside a 'stream' property?
+            else if (mediaObj.stream && mediaObj.stream instanceof MediaStream) {
+              console.log("[Glia Debug] -> It's a wrapped MediaStream. Assigning to srcObject.");
+              videoElement.srcObject = mediaObj.stream;
+            }
+            // 3. Is it a Twilio-style Track object with an attach() method?
+            else if (typeof mediaObj.attach === 'function') {
+              console.log("[Glia Debug] -> It's a Track object with an attach() method. Executing...");
+              // Twilio attaches the stream and returns a new <video> element
+              const newVideoElement = mediaObj.attach();
+              // Make sure the new element has our classes/styles if needed
+              newVideoElement.style.width = '45%';
+              newVideoElement.style.borderRadius = '8px';
+              videoElement.replaceWith(newVideoElement); 
+            }
+            // 4. Did Glia already build the HTML <video> element for us?
+            else if (mediaObj instanceof HTMLElement) {
+              console.log("[Glia Debug] -> It's a pre-built HTML Element. Swapping it into the DOM.");
+              mediaObj.style.width = '45%';
+              mediaObj.style.borderRadius = '8px';
+              videoElement.replaceWith(mediaObj);
+            }
+            // 5. Unrecognized Format
+            else {
+              console.warn("[Glia Debug] -> UNRECOGNIZED media format! The screen will stay black.", mediaObj);
+            }
             
-            // Unhide our custom video container on the page
+            // Give the browser a gentle nudge to play
+            if (videoElement.play) {
+                videoElement.play().catch(e => console.error("Autoplay prevented:", e));
+            }
+          }
+
+          salemove.addEventListener(salemove.EVENTS.ENGAGEMENT_START, function(engagement) {
+            console.log("[Glia Debug] Engagement Started! Unhiding video container...");
             document.getElementById('embedded-video-container').style.display = 'block';
 
-            // Listen for media stream updates (when cameras turn on/off)
             engagement.addEventListener(engagement.EVENTS.MEDIA_STATE_UPDATE, function(mediaState) {
-              console.log("[Glia Debug] Media State Updated:", mediaState);
+              console.log("[Glia Debug] RAW Media State Updated:", mediaState);
               
               const operatorVideo = document.getElementById('operator-video');
               const visitorVideo = document.getElementById('visitor-video');
 
-              // --- 1. Handle Operator (Remote) Video ---
-              if (mediaState.remoteVideo) {
-                 // Safely attach the WebRTC stream to our <video> tag
-                 operatorVideo.srcObject = mediaState.remoteVideo.stream || mediaState.remoteVideo;
-                 operatorVideo.play().catch(e => console.error("Video play failed", e));
-              } else {
-                 // Operator turned off camera or hasn't connected it yet
-                 operatorVideo.srcObject = null;
-              }
-
-              // --- 2. Handle Visitor (Local) Video ---
-              if (mediaState.localVideo) {
-                 visitorVideo.srcObject = mediaState.localVideo.stream || mediaState.localVideo;
-                 visitorVideo.play().catch(e => console.error("Video play failed", e));
-              } else {
-                 visitorVideo.srcObject = null;
-              }
+              // Use our robust attacher function
+              attachWebRTCStream(mediaState.remoteVideo, operatorVideo);
+              attachWebRTCStream(mediaState.localVideo, visitorVideo);
             });
           });
 
-          // Helper function to safely attach our button listener
           function setupVideoButton() {
             const videoBtn = document.getElementById('start-video-btn');
             if (videoBtn) {
               videoBtn.addEventListener('click', function() {
-                console.log("[Glia Debug] Manual video button clicked...");
-                
-                // Request the video engagement
-                salemove.requestEngagement('video')
-                  .catch(function(error) {
-                    console.error('[Glia Debug] ERROR:', error);
-                  });
+                salemove.requestEngagement('video').catch(e => console.error(e));
               });
             }
           }
@@ -75,16 +94,6 @@
           console.error("[Glia Debug] ERROR: Failed to get Glia API:", err);
         });
       };
-
-      function checkGliaReady() {
-        if (window.sm && typeof window.sm.getApi === 'function') {
-           window.smReady();
-        } else {
-           setTimeout(checkGliaReady, 100);
-        }
-      }
-
-      checkGliaReady();
     </script>
 
     <title>CE Testing Site</title>
