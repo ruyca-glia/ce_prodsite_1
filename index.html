@@ -4,7 +4,7 @@
     <script async src="https://api.glia.com/salemove_integration.js"></script>
 
     <script>
-      console.log("[Glia Debug] 1. Script parsed, checking for Glia SDK...");
+      console.log("[Glia Debug] 1. Script parsed, setting up Glia waiter...");
 
       window.smReady = function() {
         console.log("[Glia Debug] 2. smReady() triggered. Requesting Glia API...");
@@ -25,7 +25,7 @@
             verticalOffset: 100,
             visibleOperatorCount: 1
           };
-          console.log("[Glia Debug] 4. SDK config (Custom Theme & Tab Visuals) applied.");
+          console.log("[Glia Debug] 4. SDK config applied.");
 
           // Helper function to safely attach our button listener
           function setupVideoButton() {
@@ -50,12 +50,10 @@
             }
           }
 
-          // Crucial Fix: Ensure the DOM is fully loaded before looking for the button
+          // Ensure the DOM is fully loaded before looking for the button
           if (document.readyState === 'loading') {
-            console.log("[Glia Debug] DOM still loading. Waiting for DOMContentLoaded...");
             document.addEventListener('DOMContentLoaded', setupVideoButton);
           } else {
-            console.log("[Glia Debug] DOM is already loaded. Setting up button immediately...");
             setupVideoButton();
           }
 
@@ -64,14 +62,19 @@
         });
       };
 
-      // Bootstrapping the SDK readiness check
-      if (window.sm) {
-        console.log("[Glia Debug] window.sm already exists. Calling smReady()...");
-        smReady();
-      } else {
-        console.log("[Glia Debug] window.sm does NOT exist yet. Listening for 'sm.initialized'...");
-        window.addEventListener('sm.initialized', smReady);
+      // BULLETPROOF FIX: Poll for window.sm instead of relying on the event listener
+      function checkGliaReady() {
+        if (window.sm && typeof window.sm.getApi === 'function') {
+           console.log("[Glia Debug] window.sm found! Bootstrapping...");
+           window.smReady();
+        } else {
+           // If not ready, wait 100ms and check again
+           setTimeout(checkGliaReady, 100);
+        }
       }
+
+      // Start the polling
+      checkGliaReady();
     </script>
 
     <title>CE Testing Site</title>
