@@ -12,7 +12,9 @@
         sm.getApi({ version: 'v1' }).then(function(salemove) {
           console.log("[Glia Debug] 3. sm.getApi() resolved. Glia API is available.");
 
-          salemove.config.isCustomTheme = true;
+          // TEMPORARY FIX: Set this to false so Glia renders its default Video UI!
+          salemove.config.isCustomTheme = false; 
+          
           salemove.config.reactiveTabVisuals = {
             backColor: "#0000FF",
             frontColor: "#FF0000",
@@ -25,32 +27,22 @@
             verticalOffset: 100,
             visibleOperatorCount: 1
           };
-          console.log("[Glia Debug] 4. SDK config applied.");
+          console.log("[Glia Debug] 4. SDK config applied. Custom Theme is OFF for testing.");
 
-          // Helper function to safely attach our button listener
+          // Keeping our manual button just in case
           function setupVideoButton() {
-            console.log("[Glia Debug] 5. Searching for #start-video-btn in the DOM...");
             const videoBtn = document.getElementById('start-video-btn');
-            
             if (videoBtn) {
-              console.log("[Glia Debug] 6. SUCCESS! Button found. Attaching click listener.");
               videoBtn.addEventListener('click', function() {
-                console.log("[Glia Debug] 7. BUTTON CLICKED! Requesting video engagement...");
-                
+                console.log("[Glia Debug] Manual video button clicked...");
                 salemove.requestEngagement('video')
-                  .then(function() {
-                    console.log('[Glia Debug] 8. SUCCESS: Video engagement requested successfully!');
-                  })
                   .catch(function(error) {
-                    console.error('[Glia Debug] 8. ERROR: Failed to request video engagement:', error);
+                    console.error('[Glia Debug] ERROR:', error);
                   });
               });
-            } else {
-              console.warn("[Glia Debug] FAILURE: Could not find #start-video-btn. Check your HTML.");
             }
           }
 
-          // Ensure the DOM is fully loaded before looking for the button
           if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setupVideoButton);
           } else {
@@ -62,18 +54,14 @@
         });
       };
 
-      // BULLETPROOF FIX: Poll for window.sm instead of relying on the event listener
       function checkGliaReady() {
         if (window.sm && typeof window.sm.getApi === 'function') {
-           console.log("[Glia Debug] window.sm found! Bootstrapping...");
            window.smReady();
         } else {
-           // If not ready, wait 100ms and check again
            setTimeout(checkGliaReady, 100);
         }
       }
 
-      // Start the polling
       checkGliaReady();
     </script>
 
@@ -93,8 +81,11 @@
         border: none;
         cursor: pointer;
         font-size: 16px;
+        display: inline-block;
+        margin: 5px;
       }
-      .btn:hover { background-color: #5a12a3; }
+      .btn-orange { background-color: #FF5722; }
+      .btn:hover { opacity: 0.9; }
     </style>
     <link rel="stylesheet" href="./static/css/styles.css">
     <script type="text/javascript" src="./static/js/client-app.js" defer></script>
@@ -108,7 +99,11 @@
     <h1 id="title" class="title">Welcome to our PROD site!</h1>
 
     <div class="nav-container">
-      <button id="start-video-btn" class="btn">Start Video Engagement</button>
+      <button id="start-video-btn" class="btn">Force Video API Call</button>
+      
+      <div data-sm-show-media-selection-on="click" class="btn btn-orange">
+        Open Glia Media Selector
+      </div>
     </div>
 
     <div class="nav-container">
@@ -119,13 +114,5 @@
       <a href="./static/desafilacion.html" id="redirect-link" class="btn">Go to desafilacion</a>
     </div>
 
-    <dialog id="tos-modal">
-      <h2>Terms of service</h2>
-      <p>By continuing, you agree to our terms and conditions.</p>
-      <div class="actions">
-        <button id="cancel-btn">Cancel</button>
-        <button id="accept-btn">I accept</button>
-      </div>
-    </dialog>
   </body>
 </html>
