@@ -12,95 +12,49 @@
         sm.getApi({ version: 'v1' }).then(function(salemove) {
           console.log("[Glia Debug] 3. sm.getApi() resolved. Glia API is available.");
 
-          // IMPORTANT: Commented out to enable the Glia Reactive Bubble / Default UI
-          // salemove.config.isCustomTheme = true; 
-          
-          // --- THE SWISS ARMY KNIFE MEDIA ATTACHER ---
-          function attachWebRTCStream(mediaObj, videoElementId) {
-            const videoElement = document.getElementById(videoElementId);
-            
-            if (!videoElement) return;
+          // --- 1. CONFIGURATION CHANGES ---
+          // We REMOVED 'salemove.config.isCustomTheme = true'
+          // This ensures the Glia Bubble and default Video UI appear automatically.
 
-            if (!mediaObj) {
-              videoElement.srcObject = null;
-              return;
-            }
-
-            console.log(`[Glia Debug] Attaching media to ${videoElementId}:`, mediaObj);
-
-            // 1. Standard WebRTC MediaStream
-            if (mediaObj instanceof MediaStream) {
-              videoElement.srcObject = mediaObj;
-              videoElement.play().catch(e => console.error("Play failed:", e));
-            }
-            // 2. Wrapped 'stream' property
-            else if (mediaObj.stream && mediaObj.stream instanceof MediaStream) {
-              videoElement.srcObject = mediaObj.stream;
-              videoElement.play().catch(e => console.error("Play failed:", e));
-            }
-            // 3. Twilio-style Track object
-            else if (typeof mediaObj.attach === 'function') {
-              const newVideoElement = mediaObj.attach();
-              newVideoElement.id = videoElementId; 
-              newVideoElement.style.width = '45%';
-              newVideoElement.style.borderRadius = '8px';
-              if (videoElementId === 'visitor-video') newVideoElement.muted = true;
-              videoElement.replaceWith(newVideoElement); 
-            }
-            // 4. Pre-built HTML Element
-            else if (mediaObj instanceof HTMLElement) {
-              mediaObj.id = videoElementId; 
-              mediaObj.style.width = '45%';
-              mediaObj.style.borderRadius = '8px';
-              if (videoElementId === 'visitor-video') mediaObj.muted = true;
-              videoElement.replaceWith(mediaObj);
-              mediaObj.play().catch(e => console.error("Play failed:", e));
-            }
-          }
-
-          // --- Listen for the Engagement to Start ---
-          salemove.addEventListener(salemove.EVENTS.ENGAGEMENT_START, function(engagement) {
-            console.log("[Glia Debug] Engagement Started! Unhiding video container...");
-            
-            // Show your custom video container
-            document.getElementById('embedded-video-container').style.display = 'block';
-
-            engagement.addEventListener(engagement.EVENTS.MEDIA_STATE_UPDATE, function(mediaState) {
-              attachWebRTCStream(mediaState.remoteVideo, 'operator-video');
-              attachWebRTCStream(mediaState.localVideo, 'visitor-video');
-            });
-          });
-
-          // --- Setup Buttons (Logic Moved Here) ---
+          // --- 2. BUTTON LOGIC ---
           function setupButtons() {
-            // 1. Button to OPEN the Modal (The old Force Video button repurposed)
+            // Button to OPEN the Modal
             const openModalBtn = document.getElementById('open-modal-btn');
             const modal = document.getElementById('tos-modal');
 
             if (openModalBtn && modal) {
                 openModalBtn.addEventListener('click', function() {
-                    modal.showModal(); // Native Dialog API
+                    modal.showModal(); 
                 });
             }
 
-            // 2. Button to ACCEPT and START Video (Inside the Modal)
+            // Button to ACCEPT and START Video (Inside the Modal)
             const acceptBtn = document.getElementById('accept-btn');
             
             if (acceptBtn) {
               acceptBtn.addEventListener('click', function() {
-                console.log("[Glia Debug] Consent Accepted. Starting Video Engagement...");
+                console.log("[Glia Debug] Consent Accepted. Requesting Native Glia Video...");
                 
                 // Close the modal
                 if(modal) modal.close();
 
                 // Trigger Glia Video Engagement
-                // Because we removed 'isCustomTheme = true', this will also trigger the Glia Bubble
+                // Since we are using the Native UI, Glia will pop open its own video window.
                 salemove.requestEngagement('video')
-                    .catch(e => console.error('[Glia Debug] ERROR:', e));
+                    .then(engagement => {
+                        console.log("[Glia Debug] Engagement request sent successfully.");
+                    })
+                    .catch(error => {
+                        console.error('[Glia Debug] Engagement Failed:', error);
+                        // Optional: Alert the user if no agents are available
+                        if (error.cause === salemove.ERRORS.OPERATOR_UNAVAILABLE) {
+                            alert("Lo sentimos, no hay agentes disponibles en este momento.");
+                        }
+                    });
               });
             }
 
-            // 3. Cancel Button logic
+            // Cancel Button logic
             const cancelBtn = document.getElementById('cancel-btn');
             if (cancelBtn && modal) {
                 cancelBtn.addEventListener('click', () => modal.close());
@@ -118,6 +72,7 @@
         });
       };
 
+      // Standard Poller
       function checkGliaReady() {
         if (window.sm && typeof window.sm.getApi === 'function') {
            window.smReady();
@@ -130,6 +85,7 @@
     </script>
 
     <title>CE Testing Site</title>
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <style>
       h1 { color:#7C19DD; font-family:roboto; text-align:center; }
       img { width:50%; display: block; margin: 0 auto; }
@@ -153,30 +109,9 @@
       dialog::backdrop {
         background: rgba(0, 0, 0, 0.5);
       }
-
-      #embedded-video-container {
-        display: none;
-        max-width: 800px;
-        margin: 30px auto;
-        padding: 20px;
-        border: 3px solid #7C19DD;
-        border-radius: 10px;
-        background-color: #f9f9f9;
-        text-align: center;
-      }
-      .video-wrapper {
-        display: flex;
-        justify-content: space-around;
-        margin-top: 15px;
-      }
-      video {
-        width: 45%;
-        border-radius: 8px;
-        background-color: #000; 
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
-        object-fit: cover; 
-      }
     </style>
+    <link rel="stylesheet" href="./static/css/styles.css">
+    <script type="text/javascript" src="./static/js/client-app.js" defer></script>
   </head>
 
   <body>
@@ -200,12 +135,12 @@
       <button id="open-modal-btn" class="btn">Iniciar Proceso (Open Modal)</button>
     </div>
 
-    <div id="embedded-video-container">
-      <h2 style="color: #7C19DD; margin-top: 0;">Live Video Call</h2>
-      <div class="video-wrapper">
-        <video id="operator-video" autoplay playsinline></video>
-        <video id="visitor-video" autoplay playsinline muted></video>
-      </div>
+    <div class="nav-container">
+      <a href="/static/other_page.html" class="btn">Go to Cat Facts</a>
+    </div>
+    
+    <div class="nav-container">
+      <a href="./static/desafilacion.html" id="redirect-link" class="btn">Go to desafilacion</a>
     </div>
 
   </body>
