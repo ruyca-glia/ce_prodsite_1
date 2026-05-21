@@ -59,6 +59,16 @@
             if (cancelBtn && modal) {
                 cancelBtn.addEventListener('click', () => modal.close());
             }
+
+            // --- NEW: Button to show Visitor Code ---
+            const getCodeBtn = document.getElementById('get-code-btn');
+            if (getCodeBtn) {
+              getCodeBtn.addEventListener('click', function() {
+                console.log("[Glia Debug] Injecting <sm-visitor-code> into DOM...");
+                const code = document.createElement('sm-visitor-code');
+                document.body.appendChild(code);
+              });
+            }
           }
 
           if (document.readyState === 'loading') {
@@ -133,6 +143,10 @@
 
     <div class="nav-container">
       <button id="open-modal-btn" class="btn">Iniciar Proceso (Open Modal)</button>
+    </div>
+
+    <div class="nav-container">
+      <button id="get-code-btn" class="btn">Obtener Código de CoBrowsing</button>
     </div>
 
     <div class="nav-container">
