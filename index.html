@@ -119,6 +119,11 @@
       dialog::backdrop {
         background: rgba(0, 0, 0, 0.5);
       }
+
+      /* Basic form styling for neatness */
+      .form-group {
+        margin-bottom: 10px;
+      }
     </style>
     <link rel="stylesheet" href="./static/css/styles.css">
     <script type="text/javascript" src="./static/js/client-app.js" defer></script>
@@ -157,5 +162,47 @@
       <a href="./static/desafilacion.html" id="redirect-link" class="btn">Go to desafilacion</a>
     </div>
 
+    <hr style="margin: 30px auto; width: 80%; border: 1px solid #ddd;">
+
+    <div class="nav-container">
+      <form id="visitor-form">
+        <div class="form-group">
+          <label for="visitor-name">Name:</label>
+          <input type="text" id="visitor-name" name="visitor-name">
+        </div>
+        <div class="form-group">
+          <label for="visitor-email">Email:</label>
+          <input type="email" id="visitor-email" name="visitor-email">
+        </div>
+        <div class="form-group">
+          <label for="service-rating">How satisfied were you with the service?</label>
+          <input type="number" id="service-rating" name="service-rating" min="1" max="10"> 
+        </div>
+      </form>
+    </div>
+
+    <div class="nav-container">
+      <button id="btn-hello" class="btn">hello</button>
+      <button id="btn-goodbye" class="btn">good bye</button>
+      <button id="btn-interns" class="btn">go interns!</button>
+    </div>
+
+    <div class="nav-container">
+      <button id="btn-secret" class="btn">Reveal Secret</button>
+      <div id="secret-message-container"></div>
+    </div>
+
+    <script>
+      document.getElementById('btn-secret').addEventListener('click', function() {
+        // Prevent creating multiple messages if clicked multiple times
+        if (!document.getElementById('secret-message')) {
+          const secretPara = document.createElement('p');
+          secretPara.id = 'secret-message';
+          secretPara.textContent = 'this is a secret message!';
+          
+          document.getElementById('secret-message-container').appendChild(secretPara);
+        }
+      });
+    </script>
   </body>
 </html>
